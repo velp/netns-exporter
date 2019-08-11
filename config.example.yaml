@@ -1,0 +1,17 @@
+api_server:
+  server_address: 127.0.0.1
+  server_port: 8080
+  request_timeout: 60
+  telemetry_path: /metrics
+
+# Statistics files from the directory
+# /sys/devices/virtual/net/<device>/statistics/
+# must be taken into account
+interface_metrics: ["rx_bytes", "rx_packets", "rx_dropped", "tx_bytes", "tx_packets"]
+
+# Statistics files from the directory
+# /proc
+# must be taken into account
+proc_metrics:
+  nat_conntrack:
+    file: sys/net/netfilter/nf_conntrack_count
