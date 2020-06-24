@@ -15,12 +15,14 @@ var (
 	cfgPath     string
 	logFilePath string
 	logLevel    string
+	threads     int
 )
 
-func init() {
+func init() { //nolint:gochecknoinits
 	flag.StringVar(&cfgPath, "config", defaultConfigFile, fmt.Sprintf("Path to config file (default: %s)", defaultConfigFile))
 	flag.StringVar(&logFilePath, "log-file", "", "Write logs to file (default: send logs to stdout)")
 	flag.StringVar(&logLevel, "log-level", "info", "Logging level (default: info)")
+	flag.IntVar(&threads, "threads", 0, "Number of threads for collecting data (default: number of CPU cors)")
 }
 
 func main() {
@@ -45,6 +47,9 @@ func main() {
 	config, err := LoadConfig(cfgPath)
 	if err != nil {
 		logger.Fatalf("Loading config failed: %s", err)
+	}
+	if threads > 0 {
+		config.Threads = threads
 	}
 	// Run exporter
 	apiServer, err := NewAPIServer(config, logger)

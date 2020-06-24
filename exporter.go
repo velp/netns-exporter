@@ -14,7 +14,7 @@ import (
 
 const exporterName = "netns_exporter"
 
-func init() {
+func init() { //nolint:gochecknoinits
 	prometheus.MustRegister(version.NewCollector(exporterName))
 }
 
