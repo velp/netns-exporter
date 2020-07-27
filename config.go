@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"runtime"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -10,6 +11,7 @@ type NetnsExporterConfig struct {
 	APIServer        APIServerConfig       `yaml:"api_server"`
 	InterfaceMetrics []string              `yaml:"interface_metrics"`
 	ProcMetrics      map[string]ProcMetric `yaml:"proc_metrics"`
+	Threads          int                   `yaml:"threads"`
 }
 
 type ProcMetric struct {
@@ -32,5 +34,6 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+	cfg.Threads = runtime.NumCPU()
 	return &cfg, nil
 }

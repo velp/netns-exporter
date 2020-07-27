@@ -1,7 +1,7 @@
 api_server:
   server_address: 127.0.0.1
   server_port: 8080
-  request_timeout: 60
+  request_timeout: 600
   telemetry_path: /metrics
 
 # Statistics files from the directory
