@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"regexp"
 	"runtime"
 
 	yaml "gopkg.in/yaml.v2"
@@ -12,6 +13,7 @@ type NetnsExporterConfig struct {
 	InterfaceMetrics []string              `yaml:"interface_metrics"`
 	ProcMetrics      map[string]ProcMetric `yaml:"proc_metrics"`
 	Threads          int                   `yaml:"threads"`
+	NamespacesFilter NamespacesFilter      `yaml:"namespaces_filter"`
 }
 
 type ProcMetric struct {
@@ -25,6 +27,14 @@ type APIServerConfig struct {
 	TelemetryPath  string `yaml:"telemetry_path"`
 }
 
+type NamespacesFilter struct {
+	BlacklistPattern string `yaml:"blacklist_pattern"`
+	WhitelistPattern string `yaml:"whitelist_pattern"`
+
+	BlacklistRegexp *regexp.Regexp
+	WhitelistRegexp *regexp.Regexp
+}
+
 func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	cfg := NetnsExporterConfig{}
 	data, err := ioutil.ReadFile(path)
@@ -35,5 +45,9 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 		return nil, err
 	}
 	cfg.Threads = runtime.NumCPU()
+
+	cfg.NamespacesFilter.BlacklistRegexp = regexp.MustCompile(cfg.NamespacesFilter.BlacklistPattern)
+	cfg.NamespacesFilter.WhitelistRegexp = regexp.MustCompile(cfg.NamespacesFilter.WhitelistPattern)
+
 	return &cfg, nil
 }
