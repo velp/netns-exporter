@@ -33,6 +33,7 @@ func NewAPIServer(config *NetnsExporterConfig, logger *logrus.Logger) (*APIServe
 	err := prometheus.Register(NewCollector(config, logger))
 	if err != nil {
 		apiServer.logger.Errorf("Registering netns exporter failed: %s", err)
+
 		return nil, err
 	}
 
@@ -60,6 +61,7 @@ func NewAPIServer(config *NetnsExporterConfig, logger *logrus.Logger) (*APIServe
 // StartAPIServer starts Exporter's HTTP server.
 func (s *APIServer) Start() error {
 	s.logger.Infof("Starting API server on %s", s.server.Addr)
+
 	return s.server.ListenAndServe()
 }
 
