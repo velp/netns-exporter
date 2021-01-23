@@ -1,10 +1,26 @@
-# Netns prometheus exporter
+# Netns exporter
 
-Prometheus exporter to monitoring interface statistics and statistics in /proc filesystem for each network namespace.
+Prometheus exporter for monitoring interface statistics and /proc filesystem statistics in each Linux network namespace.
 
-The exporter should be run with root privileges on the host system (don't work from a docker container).
+**⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces.  Cannot be run inside a docker container.⚠️**
 
-For example, for two network namespaces like:
+## Install
+Download [releases](https://github.com/velp/netns-exporter/releases).
+
+## Build
+ For Linux system:
+
+ ```shell
+ make build
+ ```
+
+ For MacOS and other UNIX-like systems:
+ ```shell
+ make build-in-docker
+ ```
+
+## Example
+For example, for two Linux network namespaces like:
 
 ```
 # ip netns
@@ -67,3 +83,6 @@ netns_network_tx_packets_total{device="kokoko",netns="test"} 0
 netns_network_tx_packets_total{device="qwerty",netns="test2"} 0
 ...
 ```
+
+## Contribution
+Want to contribute! That's awesome! Check out [CONTRIBUTING documentation](https://github.com/jexia/jexia-cli/blob/master/CONTRIBUTING.rst).
