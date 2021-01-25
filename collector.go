@@ -93,8 +93,8 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// Filter namespaces by regexp if namespace-filters declared in config
-	if (c.config.NamespacesFilter.BlacklistRegexp.String() != "") ||
-		(c.config.NamespacesFilter.WhitelistRegexp.String() != "") {
+	if (c.config.NamespacesFilter.BlacklistPattern != "") ||
+		(c.config.NamespacesFilter.WhitelistPattern != "") {
 		nsFiles = c.filterNsFiles(nsFiles)
 	}
 
@@ -204,7 +204,7 @@ func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
 	whitelistRegexp := c.config.NamespacesFilter.WhitelistRegexp
 
 	if blacklistRegexp.String() != "" {
-		tmp := nsFiles[:0]
+		tmp := make([]os.FileInfo, 0)
 		for _, ns := range nsFiles {
 			if !blacklistRegexp.MatchString(ns.Name()) {
 				tmp = append(tmp, ns)
@@ -214,7 +214,7 @@ func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
 	}
 
 	if whitelistRegexp.String() != "" {
-		tmp := nsFiles[:0]
+		tmp := make([]os.FileInfo, 0)
 		for _, ns := range nsFiles {
 			if whitelistRegexp.MatchString(ns.Name()) {
 				tmp = append(tmp, ns)

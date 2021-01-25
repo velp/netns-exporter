@@ -46,8 +46,15 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	}
 	cfg.Threads = runtime.NumCPU()
 
-	cfg.NamespacesFilter.BlacklistRegexp = regexp.MustCompile(cfg.NamespacesFilter.BlacklistPattern)
-	cfg.NamespacesFilter.WhitelistRegexp = regexp.MustCompile(cfg.NamespacesFilter.WhitelistPattern)
+	cfg.NamespacesFilter.BlacklistRegexp, err = regexp.Compile(cfg.NamespacesFilter.BlacklistPattern)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.NamespacesFilter.WhitelistRegexp, err = regexp.Compile(cfg.NamespacesFilter.WhitelistPattern)
+	if err != nil {
+		return nil, err
+	}
 
 	return &cfg, nil
 }
