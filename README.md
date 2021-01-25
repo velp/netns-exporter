@@ -67,3 +67,11 @@ netns_network_tx_packets_total{device="kokoko",netns="test"} 0
 netns_network_tx_packets_total{device="qwerty",netns="test2"} 0
 ...
 ```
+Also, netns-exporter provides an optional ability to filter namespaces by regular expression:
+```
+...
+namespaces_filter:
+  blacklist_pattern: regexp_pattern1
+  whitelist_pattern: regexp_pattern2
+```
+With the simultaneous use of two filters, the blacklist filter has a higher priority.

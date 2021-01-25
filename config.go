@@ -45,16 +45,25 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 		return nil, err
 	}
 	cfg.Threads = runtime.NumCPU()
-
-	cfg.NamespacesFilter.BlacklistRegexp, err = regexp.Compile(cfg.NamespacesFilter.BlacklistPattern)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.NamespacesFilter.WhitelistRegexp, err = regexp.Compile(cfg.NamespacesFilter.WhitelistPattern)
-	if err != nil {
-		return nil, err
-	}
-
 	return &cfg, nil
+}
+
+func (nsFilter *NamespacesFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type plain NamespacesFilter
+	err := unmarshal((*plain)(nsFilter))
+	if err != nil {
+		return err
+	}
+
+	nsFilter.BlacklistRegexp, err = regexp.Compile(nsFilter.BlacklistPattern)
+	if err != nil {
+		return err
+	}
+
+	nsFilter.WhitelistRegexp, err = regexp.Compile(nsFilter.WhitelistPattern)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
