@@ -37,14 +37,18 @@ type NamespacesFilter struct {
 
 func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	cfg := NetnsExporterConfig{}
+
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+
 	cfg.Threads = runtime.NumCPU()
+
 	return &cfg, nil
 }
 

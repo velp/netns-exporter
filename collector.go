@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -31,7 +30,6 @@ type Collector struct {
 	config      *NetnsExporterConfig
 	intfMetrics map[string]*prometheus.Desc
 	procMetrics map[string]*PrometheusProcMetric
-	mu          sync.Mutex
 }
 
 type PrometheusProcMetric struct {
@@ -63,6 +61,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 			),
 		}
 	}
+
 	return &Collector{
 		logger:      logger.WithField("component", "collector"),
 		config:      config,
@@ -75,6 +74,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	for _, desc := range c.intfMetrics {
 		ch <- desc
 	}
+
 	for _, metric := range c.procMetrics {
 		ch <- metric.Desc
 	}
@@ -89,6 +89,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	nsFiles, err := ioutil.ReadDir(NetnsPath)
 	if err != nil {
 		c.logger.Errorf("Reading list of network nemaspaces failed: %s", err)
+
 		return
 	}
 
@@ -104,23 +105,28 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	// Get metrics from all of namespaces
 	for _, ns := range nsFiles {
 		wg.Add(1)
+
 		go c.getMetricsFromNamespace(ns.Name(), wg, ch)
 	}
+
 	wg.Wait()
 	c.logger.Debugf("collecting took %s for %d namespaces", time.Since(startTime), len(nsFiles))
 }
 
 func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGroup, ch chan<- prometheus.Metric) {
 	defer wg.Done()
+
 	c.logger.Debugf("Start getting statistics for namespace %s", namespace)
 	// Lock the OS Thread so we don't accidentally switch namespaces
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+
 	startTime := time.Now()
 	// Save current namespace
 	curNs, err := netns.Get()
 	if err != nil {
 		c.logger.Errorf("Get current namespace %s failed: %s", namespace, err)
+
 		return
 	}
 	defer curNs.Close()
@@ -130,10 +136,13 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 	ns, err := netns.GetFromName(namespace)
 	if err != nil {
 		c.logger.Errorf("Get net namespace by name %s failed: %s", namespace, err)
+
 		return
 	}
+
 	if err := netns.Set(ns); err != nil {
 		c.logger.Errorf("Change net namespace to %s failed: %s", namespace, err)
+
 		return
 	}
 	defer ns.Close()
@@ -141,6 +150,7 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 	// Say to the kernel that we will use separate  context
 	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil { //nolint:typecheck
 		c.logger.Errorf("Syscall unshare failed in namespace %s: %s", namespace, err)
+
 		return
 	}
 
@@ -149,12 +159,14 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 	// and: https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
 	if err := syscall.Mount("", "/", "none", syscall.MS_SLAVE|syscall.MS_REC, ""); err != nil { //nolint:typecheck
 		c.logger.Errorf("Mount root with rslave option failed in namepsace %s: %s", namespace, err)
+
 		return
 	}
 
 	// Mount sysfs from net nemaspace
 	if err := syscall.Mount(namespace, "/sys", "sysfs", 0, "ro"); err != nil { //nolint:typecheck
 		c.logger.Errorf("Mount /sys from the namespace failed in namespace: %s", namespace, err)
+
 		return
 	}
 	defer syscall.Unmount("/sys", syscall.MNT_DETACH) //nolint:errcheck,typecheck
@@ -163,14 +175,18 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 	ifFiles, err := ioutil.ReadDir(InterfaceStatPath)
 	if err != nil {
 		c.logger.Errorf("Reading sysfs directory for interface %s in namespace %s failed: %s", InterfaceStatPath, namespace, err)
+
 		return
 	}
+
 	for _, ifFile := range ifFiles {
 		// We don't need to get stat for lo interface
 		if ifFile.Name() == "lo" {
 			continue
 		}
+
 		c.logger.Debugf("Start getting statistics for interface %s in namespace %s", ifFile.Name(), namespace)
+
 		for metricName, desc := range c.intfMetrics {
 			value := c.getMetricFromFile(namespace, InterfaceStatPath+ifFile.Name()+"/statistics/"+metricName)
 			ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, value, namespace, ifFile.Name())
@@ -182,6 +198,7 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 		value := c.getMetricFromFile(namespace, ProcStatPath+metric.Config.FileName)
 		ch <- prometheus.MustNewConstMetric(metric.Desc, prometheus.CounterValue, value, namespace)
 	}
+
 	c.logger.Debugf("processing namespace %s took %s", namespace, time.Since(startTime))
 }
 
@@ -189,13 +206,17 @@ func (c *Collector) getMetricFromFile(namespace, file string) float64 {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		c.logger.Errorf("Error while reading statistic file %s in namespace %s: %s", file, namespace, err)
+
 		return -1
 	}
+
 	stat, err := strconv.ParseFloat(strings.TrimSpace(string(data)), 64)
 	if err != nil {
 		c.logger.Printf("Error while parsing data from file %s in namespace %s: %s", file, namespace, err)
+
 		return -1
 	}
+
 	return stat
 }
 
