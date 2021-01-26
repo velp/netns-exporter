@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -90,6 +91,12 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		c.logger.Errorf("Reading list of network nemaspaces failed: %s", err)
 
 		return
+	}
+
+	// Filter namespaces by regexp if namespace-filters declared in config
+	if (c.config.NamespacesFilter.BlacklistPattern != "") ||
+		(c.config.NamespacesFilter.WhitelistPattern != "") {
+		nsFiles = c.filterNsFiles(nsFiles)
 	}
 
 	c.logger.Debugf("Found %d namespaces", len(nsFiles))
@@ -211,4 +218,35 @@ func (c *Collector) getMetricFromFile(namespace, file string) float64 {
 	}
 
 	return stat
+}
+
+func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
+	blacklistRegexp := c.config.NamespacesFilter.BlacklistRegexp
+	whitelistRegexp := c.config.NamespacesFilter.WhitelistRegexp
+
+	if blacklistRegexp.String() != "" {
+		tmp := make([]os.FileInfo, 0)
+
+		for _, ns := range nsFiles {
+			if !blacklistRegexp.MatchString(ns.Name()) {
+				tmp = append(tmp, ns)
+			}
+		}
+
+		nsFiles = tmp
+	}
+
+	if whitelistRegexp.String() != "" {
+		tmp := make([]os.FileInfo, 0)
+
+		for _, ns := range nsFiles {
+			if whitelistRegexp.MatchString(ns.Name()) {
+				tmp = append(tmp, ns)
+			}
+		}
+
+		nsFiles = tmp
+	}
+
+	return nsFiles
 }

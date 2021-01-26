@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"regexp"
 	"runtime"
 
 	yaml "gopkg.in/yaml.v2"
@@ -12,6 +13,7 @@ type NetnsExporterConfig struct {
 	InterfaceMetrics []string              `yaml:"interface_metrics"`
 	ProcMetrics      map[string]ProcMetric `yaml:"proc_metrics"`
 	Threads          int                   `yaml:"threads"`
+	NamespacesFilter NamespacesFilter      `yaml:"namespaces_filter"`
 }
 
 type ProcMetric struct {
@@ -23,6 +25,14 @@ type APIServerConfig struct {
 	ServerPort     int    `yaml:"server_port"`
 	RequestTimeout int    `yaml:"request_timeout"`
 	TelemetryPath  string `yaml:"telemetry_path"`
+}
+
+type NamespacesFilter struct {
+	BlacklistPattern string `yaml:"blacklist_pattern"`
+	WhitelistPattern string `yaml:"whitelist_pattern"`
+
+	BlacklistRegexp *regexp.Regexp
+	WhitelistRegexp *regexp.Regexp
 }
 
 func LoadConfig(path string) (*NetnsExporterConfig, error) {
@@ -40,4 +50,25 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	cfg.Threads = runtime.NumCPU()
 
 	return &cfg, nil
+}
+
+func (nsFilter *NamespacesFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type plain NamespacesFilter
+
+	err := unmarshal((*plain)(nsFilter))
+	if err != nil {
+		return err
+	}
+
+	nsFilter.BlacklistRegexp, err = regexp.Compile(nsFilter.BlacklistPattern)
+	if err != nil {
+		return err
+	}
+
+	nsFilter.WhitelistRegexp, err = regexp.Compile(nsFilter.WhitelistPattern)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

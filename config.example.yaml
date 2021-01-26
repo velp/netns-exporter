@@ -15,3 +15,9 @@ interface_metrics: ["rx_bytes", "rx_packets", "rx_dropped", "tx_bytes", "tx_pack
 proc_metrics:
   nat_conntrack:
     file: sys/net/netfilter/nf_conntrack_count
+
+# (Optional) Filter namespaces by regular expression
+# With the simultaneous use of two filters, the blacklist has a higher priority
+# namespaces_filter:
+#   blacklist_pattern: "regexp_pattern1"
+#   whitelist_pattern: "regexp_pattern2"
