@@ -54,6 +54,7 @@ func LoadConfig(path string) (*NetnsExporterConfig, error) {
 
 func (nsFilter *NamespacesFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type plain NamespacesFilter
+
 	err := unmarshal((*plain)(nsFilter))
 	if err != nil {
 		return err

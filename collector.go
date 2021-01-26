@@ -226,21 +226,25 @@ func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
 
 	if blacklistRegexp.String() != "" {
 		tmp := make([]os.FileInfo, 0)
+
 		for _, ns := range nsFiles {
 			if !blacklistRegexp.MatchString(ns.Name()) {
 				tmp = append(tmp, ns)
 			}
 		}
+
 		nsFiles = tmp
 	}
 
 	if whitelistRegexp.String() != "" {
 		tmp := make([]os.FileInfo, 0)
+
 		for _, ns := range nsFiles {
 			if whitelistRegexp.MatchString(ns.Name()) {
 				tmp = append(tmp, ns)
 			}
 		}
+
 		nsFiles = tmp
 	}
 
