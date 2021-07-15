@@ -13,6 +13,9 @@ build:
 build-in-docker:
 	docker run -it --rm -v `pwd`:/go/netns-exporter -w /go/netns-exporter -e CGO_ENABLED=0 -e GOOS=linux golang:1.15 go build
 
+docker-image:
+	docker build . -t netns-exporter
+
 test: .FORCE
 	go test -v -race $(call get_go_packages)
 

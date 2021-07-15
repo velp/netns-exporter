@@ -2,7 +2,7 @@
 
 Prometheus exporter for monitoring interface statistics and /proc filesystem statistics in each Linux network namespace.
 
-**⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces.  Cannot be run inside a docker container.⚠️**
+**⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces.⚠️**
 
 ## Install
 Download [releases](https://github.com/velp/netns-exporter/releases).
@@ -17,6 +17,11 @@ Download [releases](https://github.com/velp/netns-exporter/releases).
  For MacOS and other UNIX-like systems:
  ```shell
  make build-in-docker
+ ```
+
+Docker Image
+ ```shell
+ make docker-image
  ```
 
 ## Example
@@ -91,6 +96,11 @@ namespaces_filter:
   whitelist_pattern: regexp_pattern2
 ```
 With the simultaneous use of two filters, the blacklist filter has a higher priority.
+
+## Run in Docker
+```bash
+docker run --name netns-exporter -d -p8080:8080 --privileged --mount type=bind,source="/run/netns,target=/run/netns,bind-propagation=slave" netns-exporter
+```
 
 ## Contribution
 Want to contribute! That's awesome! Check out [CONTRIBUTING documentation](https://github.com/jexia/jexia-cli/blob/master/CONTRIBUTING.rst).
