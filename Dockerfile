@@ -7,14 +7,13 @@ COPY . /go/netns-exporter
 WORKDIR /go/netns-exporter
 RUN go build
 RUN strip netns-exporter
-RUN mkdir -p /etc_tmp/netns-exporter
-RUN cp /go/netns-exporter/config.docker.yaml /etc_tmp/netns-exporter/config.yaml
 
 # Stage 2: Prepare final image
-FROM ubuntu:20.04
+FROM alpine:3.14.1
+
 
 # Copy binary from Stage 1
 COPY --from=builder /go/netns-exporter/netns-exporter .
-COPY --from=builder /etc_tmp/netns-exporter/config.yaml /etc/netns-exporter/config.yaml
+COPY config.docker.yaml /etc/netns-exporter/config.yaml
 
 ENTRYPOINT [ "/netns-exporter" ]
