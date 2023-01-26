@@ -1,0 +1,23 @@
+api_server:
+  server_address: 0.0.0.0
+  server_port: 8080
+  request_timeout: 600
+  telemetry_path: /metrics
+
+# Statistics files from the directory
+# /sys/devices/virtual/net/<device>/statistics/
+# must be taken into account
+interface_metrics: ["rx_bytes", "rx_packets", "rx_dropped", "tx_bytes", "tx_packets"]
+
+# Statistics files from the directory
+# /proc
+# must be taken into account
+proc_metrics:
+  nat_conntrack:
+    file: sys/net/netfilter/nf_conntrack_count
+
+# (Optional) Filter namespaces by regular expression
+# With the simultaneous use of two filters, the blacklist has a higher priority
+# namespaces_filter:
+#   blacklist_pattern: "regexp_pattern1"
+#   whitelist_pattern: "regexp_pattern2"
