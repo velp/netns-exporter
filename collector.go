@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
+    "net"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netns"
@@ -23,6 +23,9 @@ const (
 	collectorSubsystem = "network"
 	netnsLabel         = "netns"
 	deviceLabel        = "device"
+	router		   	   = "router"
+	host			   = "host"
+	deviceIP		   = "deviceIP"
 )
 
 type Collector struct {
@@ -44,7 +47,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 		intfMetrics[metric] = prometheus.NewDesc(
 			prometheus.BuildFQName(collectorNamespace, collectorSubsystem, metric+"_total"),
 			"Interface statistics in the network namespace",
-			[]string{netnsLabel, deviceLabel},
+			[]string{netnsLabel, deviceLabel, router, host, deviceIP},
 			nil,
 		)
 	}
@@ -187,9 +190,20 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 
 		c.logger.Debugf("Start getting statistics for interface %s in namespace %s", ifFile.Name(), namespace)
 
+		// get ip address of device in namespace
+		device_addr, err := c.getIPfromNS(namespace, ifFile.Name())
+		if err != nil {
+			c.logger.Errorf("Failed to get IP of device: %s", ifFile.Name)
+		}
+
+		// parse routerID from namespace
+		routerID :=  strings.Replace(namespace, "qrouter-", "", -1)
+		// get current hostname 
+		hostname := c.getHostname()
+
 		for metricName, desc := range c.intfMetrics {
 			value := c.getMetricFromFile(namespace, InterfaceStatPath+ifFile.Name()+"/statistics/"+metricName)
-			ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, value, namespace, ifFile.Name())
+			ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, value, namespace, ifFile.Name(), routerID, hostname, device_addr)
 		}
 	}
 
@@ -249,4 +263,52 @@ func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
 	}
 
 	return nsFiles
+}
+
+
+func (c *Collector) getHostname() (string) {
+    hostname, err := os.Hostname()
+    if err != nil {
+		c.logger.Debugf("Fail to get current hostname")
+        return ""
+    }
+    return hostname
+}
+
+func (c *Collector) getIPfromNS(namespace, device string) (IP string, err error) {
+
+	ns, err := netns.GetFromName(namespace)
+	if err != nil {
+		c.logger.Errorf("Failed to open namespace:", err)
+		return "nil", err
+	}
+	defer ns.Close()
+
+	netns.Set(ns)
+	defer netns.Set(netns.None())
+
+	// Get IP from specific ip adress
+	iface, err := net.InterfaceByName(device)
+	if err != nil {
+		c.logger.Errorf("Failed to retrieve interfaces:", err)
+		return "nil", err
+	}
+	addrs, err := iface.Addrs()
+	if err != nil {
+		c.logger.Errorf("Failed to retrieve addresses for interface", iface.Name, ":", err)
+		return "nil", err
+	}
+	if len(addrs) > 0 {
+		ip, _, err := net.ParseCIDR(addrs[0].String())
+		if err != nil {
+			c.logger.Errorf("Failed to parse IP address:", err)
+			return "nil", err
+		}
+		c.logger.Debugf("IP address %s %s in namespace %s",  iface.Name, ip, namespace)
+		return ip.String(), nil
+
+	} 
+	c.logger.Debugf("Interface %s no IP", iface.Name)
+	return "", nil
+	
 }
