@@ -179,11 +179,18 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 		return
 	}
 
+	// Filter device name by regexp if device-filters declared in config
+	if (c.config.DeviceFilter.BlacklistPattern != "") ||
+		(c.config.DeviceFilter.WhitelistPattern != "") {
+			ifFiles = c.filteriFFiles(ifFiles)
+	}
+
 	for _, ifFile := range ifFiles {
 		// We don't need to get stat for lo interface
 		if ifFile.Name() == "lo" {
 			continue
 		}
+
 
 		c.logger.Debugf("Start getting statistics for interface %s in namespace %s", ifFile.Name(), namespace)
 
@@ -249,4 +256,37 @@ func (c *Collector) filterNsFiles(nsFiles []os.FileInfo) []os.FileInfo {
 	}
 
 	return nsFiles
+}
+
+
+
+func (c *Collector) filteriFFiles(ifFiles []os.FileInfo) []os.FileInfo {
+	blacklistRegexp := c.config.DeviceFilter.BlacklistRegexp
+	whitelistRegexp := c.config.DeviceFilter.WhitelistRegexp
+
+	if blacklistRegexp.String() != "" {
+		tmp := make([]os.FileInfo, 0)
+
+		for _, ifD := range ifFiles {
+			if !blacklistRegexp.MatchString(ifD.Name()) {
+				tmp = append(tmp, ifD)
+			}
+		}
+
+		ifFiles = tmp
+	}
+
+	if whitelistRegexp.String() != "" {
+		tmp := make([]os.FileInfo, 0)
+
+		for _, ifD := range ifFiles {
+			if whitelistRegexp.MatchString(ifD.Name()) {
+				tmp = append(tmp, ifD)
+			}
+		}
+
+		ifFiles = tmp
+	}
+
+	return ifFiles
 }

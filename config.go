@@ -14,6 +14,7 @@ type NetnsExporterConfig struct {
 	ProcMetrics      map[string]ProcMetric `yaml:"proc_metrics"`
 	Threads          int                   `yaml:"threads"`
 	NamespacesFilter NamespacesFilter      `yaml:"namespaces_filter"`
+	DeviceFilter 	DeviceFilter 		   `yaml:"device_filter"`
 }
 
 type ProcMetric struct {
@@ -28,6 +29,14 @@ type APIServerConfig struct {
 }
 
 type NamespacesFilter struct {
+	BlacklistPattern string `yaml:"blacklist_pattern"`
+	WhitelistPattern string `yaml:"whitelist_pattern"`
+
+	BlacklistRegexp *regexp.Regexp
+	WhitelistRegexp *regexp.Regexp
+}
+
+type DeviceFilter struct {
 	BlacklistPattern string `yaml:"blacklist_pattern"`
 	WhitelistPattern string `yaml:"whitelist_pattern"`
 
@@ -72,3 +81,26 @@ func (nsFilter *NamespacesFilter) UnmarshalYAML(unmarshal func(interface{}) erro
 
 	return nil
 }
+
+
+func (devFilter *DeviceFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type plain DeviceFilter
+
+	err := unmarshal((*plain)(devFilter))
+	if err != nil {
+		return err
+	}
+
+	devFilter.BlacklistRegexp, err = regexp.Compile(devFilter.BlacklistPattern)
+	if err != nil {
+		return err
+	}
+
+	devFilter.WhitelistRegexp, err = regexp.Compile(devFilter.WhitelistPattern)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
