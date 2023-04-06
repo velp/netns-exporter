@@ -21,3 +21,6 @@ proc_metrics:
 # namespaces_filter:
 #   blacklist_pattern: "regexp_pattern1"
 #   whitelist_pattern: "regexp_pattern2"
+# device_filter:
+#   blacklist_pattern: regexp_pattern1
+#   whitelist_pattern: regexp_pattern2

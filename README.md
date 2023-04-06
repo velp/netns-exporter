@@ -94,6 +94,11 @@ Also, netns-exporter provides an optional ability to filter namespaces by regula
 namespaces_filter:
   blacklist_pattern: regexp_pattern1
   whitelist_pattern: regexp_pattern2
+
+device_filter:
+  blacklist_pattern: regexp_pattern1
+  whitelist_pattern: regexp_pattern2
+  
 ```
 With the simultaneous use of two filters, the blacklist filter has a higher priority.
 
